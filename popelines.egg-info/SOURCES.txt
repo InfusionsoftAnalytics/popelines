@@ -1,8 +1,0 @@
-setup.py
-popelines/__init__.py
-popelines/main.py
-popelines.egg-info/PKG-INFO
-popelines.egg-info/SOURCES.txt
-popelines.egg-info/dependency_links.txt
-popelines.egg-info/not-zip-safe
-popelines.egg-info/top_level.txt
