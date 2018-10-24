@@ -10,21 +10,28 @@ class popeline:
     """
     Popeline creates a data pipeline for Google's BigQuery. 
     """
-    def __init__(self, dataset_id, service_key_file_loc):
+    def __init__(self, dataset_id, service_key_file_loc, verbose=False):
         self.bq_client = bigquery.Client.from_service_account_json(service_key_file_loc)
 
         # set up a logger
-        self.log = self.get_logger(level=logging.INFO)
+        self.log = self.get_logger(verbose)
 
         # get local directory
         self.directory = str(os.path.abspath(os.path.dirname(__file__)))
 
         self.dataset_id = dataset_id
 
-    def get_logger(self, level):
+    def get_logger(self, verbose):
+        log_levels = [logging.INFO, logging.DEBUG]
+
         log = logging.getLogger()
-        log.setLevel(level)
-        log.addHandler(logging.StreamHandler(sys.stdout))
+        log.setLevel(log_levels[int(verbose)])
+        
+        ch = logging.StreamHandler(sys.stdout)
+        ch.setLevel(log_levels[int(verbose)])
+        formatter = logging.Formatter('%(asctime)s - %(name)s - %(message)s')
+        ch.setFormatter(formatter)
+        log.addHandler(ch)
 
         return log
 
@@ -82,7 +89,7 @@ class popeline:
         """
         r = requests.request(method=method, url=url, headers=headers, params=params, data=None)
         
-        self.log.info(f'Called endpoint {url} with result {r}')
+        self.log.debug(f'Called endpoint {url} with result {r}')
 
         try:
             jayson = json.loads(r.text)

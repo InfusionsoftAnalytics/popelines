@@ -4,9 +4,10 @@ with open("README.md", "r") as fh:
     long_description = fh.read()
 
 setuptools.setup(name='popelines',
-      version='0.1.1',
+      version='0.1.4',
       description='An ETL library for Google BigQuery',
       long_description=long_description,
+      long_description_content_type='text/markdown',
       url='https://github.com/InfusionsoftAnalytics/popelines',
       author='Daniel Francis',
       author_email='daniel.francis@infusionsoft.com',
