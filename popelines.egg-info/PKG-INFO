@@ -1,0 +1,10 @@
+Metadata-Version: 1.0
+Name: popelines
+Version: 0.1
+Summary: An ETL library for Google BigQuery
+Home-page: https://github.com/InfusionsoftAnalytics/popelines
+Author: Daniel Francis
+Author-email: daniel.francis@infusionsoft.com
+License: MIT
+Description: UNKNOWN
+Platform: UNKNOWN
