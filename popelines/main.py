@@ -44,6 +44,32 @@ class popeline:
 
         return log
 
+    def generate_bq_schema(self, file_name, schema_file_name=None):
+        """
+        Uses CLI tool bigquery_schema_generator to generate an API
+        representation of a schema
+        """
+        if not schema_file_name:
+            schema_file_name = f'{self.directory}/schema.json'
+        os.system(f"generate-schema < {file_name} > {schema_file_name}")
+
+        schema = open(schema_file_name, 'r').read()
+
+        return json.loads(schema)
+
+    def merge_schemas(self, old_schm, new_schm):
+        """
+        Run through new_schm and add any fields not in old_schm
+        to old_schm.
+        """
+        old_schm_cols = [x['name'] for x in old_schm]
+
+        for col in new_schm:
+            if col['name'] not in old_schm_cols:
+                old_schm.append(col)
+
+        return old_schm
+
     def write_to_bq(self, table_name, file_name, append=True):
         """
         Write file at file_name to table in BQ.
@@ -54,17 +80,30 @@ class popeline:
 
         job_config = bigquery.LoadJobConfig()
         job_config.source_format = 'NEWLINE_DELIMITED_JSON'
-        job_config.ignore_unknown_values = True
-
         job_config.schema_update_options = ['ALLOW_FIELD_ADDITION']
-        job_config.autodetect = True
+
+        # prepare for schema manipulation
+        current_tables = [x.table_id for x in self.bq_client.list_tables(dataset_ref)]
+        new_schm = self.generate_bq_schema(file_name)
+
+        # if table exists, edit schema. otherwise, use new_schm
+        if table_name in current_tables:	
+            table = self.bq_client.get_table(table_ref)	
+            new_schm = self.merge_schemas(table.to_api_repr()['schema']['fields'], new_schm)
+            
+            api_repr = job_config.to_api_repr()
+            api_repr['load']['schema'] = {'fields': new_schm}
+            job_config = job_config.from_api_repr(api_repr)
+        else:	
+            job_config.schema = new_schm
         
+        # handle write options
         if append == False:
             job_config.write_disposition = "WRITE_TRUNCATE"
         else:
             job_config.write_disposition = "WRITE_APPEND"
 
-
+        # send to BQ
         with open(file_name, 'rb') as source_file:
             job = self.bq_client.load_table_from_file(
                 source_file,
