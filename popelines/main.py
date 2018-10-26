@@ -1,5 +1,6 @@
 import json
 from google.cloud import bigquery
+from google.cloud import storage
 import os
 import logging
 import requests
@@ -10,8 +11,16 @@ class popeline:
     """
     Popeline creates a data pipeline for Google's BigQuery. 
     """
-    def __init__(self, dataset_id, service_key_file_loc, verbose=False):
-        self.bq_client = bigquery.Client.from_service_account_json(service_key_file_loc)
+    def __init__(self, dataset_id, service_key_file_loc=None, verbose=False):
+
+        # set up GCS and BQ clients - if no service_account_json provided, then pull
+        # from environment variable
+        if service_key_file_loc:
+            self.bq_client = bigquery.Client.from_service_account_json(service_key_file_loc)
+            self.gcs_client = storage.Client.from_service_account_json(service_key_file_loc)
+        else:
+            self.bq_client = bigquery.Client()
+            self.gcs_client = storage.Client()
 
         # set up a logger
         self.log = self.get_logger(verbose)
@@ -115,9 +124,21 @@ class popeline:
                     yield (start, end_datetime)
 
     def find_last_entry(self, table_name, date_column):
+        """
+        Returns maximum value from date_column in table_name.
+        """
         query = f"SELECT MAX({date_column}) FROM `{self.dataset_id}.{table_name}`"
         query_job = self.bq_client.query(query)  # API request
         rows = query_job.result()
         latest_time = [x[0] for x in rows][0]
 
         return latest_time
+
+    def bq_query(self, query):
+        """
+        Returns maximum value from date_column in table_name.
+        """
+        query_job = self.bq_client.query(query)  # API request
+        rows = [x for x in query_job.result()]
+        
+        return rows
