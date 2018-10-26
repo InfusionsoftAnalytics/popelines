@@ -56,13 +56,8 @@ class popeline:
         job_config.source_format = 'NEWLINE_DELIMITED_JSON'
         job_config.ignore_unknown_values = True
 
-        current_tables = [x.table_id for x in self.bq_client.list_tables(dataset_ref)]
-
-        if table_name in current_tables:
-            table = self.bq_client.get_table(table_ref)
-            job_config.schema = table.schema
-        else:
-            job_config.autodetect = True
+        job_config.schema_update_options = ['ALLOW_FIELD_ADDITION']
+        job_config.autodetect = True
         
         if append == False:
             job_config.write_disposition = "WRITE_TRUNCATE"
