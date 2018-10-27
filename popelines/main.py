@@ -11,7 +11,7 @@ class popeline:
     """
     Popeline creates a data pipeline for Google's BigQuery. 
     """
-    def __init__(self, dataset_id, service_key_file_loc=None, verbose=False):
+    def __init__(self, dataset_id, service_key_file_loc=None, directory='.', verbose=False):
 
         # set up GCS and BQ clients - if no service_account_json provided, then pull
         # from environment variable
@@ -26,7 +26,7 @@ class popeline:
         self.log = self.get_logger(verbose)
 
         # get local directory
-        self.directory = str(os.path.abspath(os.path.dirname(__file__)))
+        self.directory = directory
 
         self.dataset_id = dataset_id
 
