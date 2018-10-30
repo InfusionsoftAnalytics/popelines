@@ -9,7 +9,7 @@ import datetime
 
 class popeline:
     """
-    Popeline creates a data pipeline for Google's BigQuery. 
+    popeline creates a data pipeline for Google's BigQuery. 
     """
     def __init__(self, dataset_id, service_key_file_loc=None, directory='.', verbose=False):
 
@@ -31,6 +31,9 @@ class popeline:
         self.dataset_id = dataset_id
 
     def get_logger(self, verbose):
+        """
+        Does basically what you would expect. 
+        """
         log_levels = [logging.INFO, logging.DEBUG]
 
         log = logging.getLogger()
@@ -74,9 +77,10 @@ class popeline:
         """
         Write file at file_name to table in BQ.
         """
+        table_name = table_name.lower().replace("-","_")
         self.log.info(f"Writing {table_name} to BQ from file {file_name}")
         dataset_ref = self.bq_client.dataset(self.dataset_id)
-        table_ref = dataset_ref.table(table_name.lower().replace("-","_"))
+        table_ref = dataset_ref.table(table_name)
 
         job_config = bigquery.LoadJobConfig()
         job_config.source_format = 'NEWLINE_DELIMITED_JSON'
@@ -116,6 +120,17 @@ class popeline:
             self.log.info(job.errors)
             job.result()
 
+    def write_to_gcs(self, gcs_path, file_name, bucket_name=None):
+        self.log.info('Uploading to GCS...')
+
+        if bucket_name:
+            bucket = self.gcs_client.get_bucket(bucket_name)
+        else:
+            bucket = self.gcs_client.get_bucket(self.dataset_id)
+
+        blob = storage.Blob(gcs_path, bucket)
+        blob.upload_from_string(open(file_name, 'r').read())
+
     def write_to_json(self, file_name, jayson, mode='w'):
         """
         Provide a table_name and a dict object and I will write it in line-delimited
@@ -130,7 +145,7 @@ class popeline:
         Provide an endpoint and a method ('GET', 'POST', etc.), along with other arguments.
         Headers and params must be in dict form. Returns JSON.
         """
-        r = requests.request(method=method, url=url, headers=headers, params=params, data=None)
+        r = requests.request(method=method, url=url, headers=headers, params=params, data=data)
         
         self.log.debug(f'Called endpoint {url} with result {r}')
 
@@ -176,3 +191,41 @@ class popeline:
         rows = [x for x in query_job.result()]
         
         return rows
+
+    def fix_json_keys(self, obj, callback):
+        """
+        Runs all keys in a JSON object (dict or list) through 
+        the given callback function.
+        """
+        if type(obj) == list:
+            newlist = []
+            for item in obj:
+                newlist.append(self.fix_json_keys(item, callback))
+            return newlist
+        elif type(obj) == dict:
+            newdict = {}
+            for item in list(obj):
+                if type(obj[item]) == list or type(obj[item]) == dict:
+                    newdict[callback(item)] = self.fix_json_keys(obj[item], callback)
+                else:
+                    newdict[callback(item)] = obj[item]
+            return newdict
+
+    def fix_json_values(self, obj, callback):
+        """
+        Runs all values in a JSON object (dict or list) through 
+        the given callback function.
+        """
+        if type(obj) == list:
+            newlist = []
+            for item in obj:
+                newlist.append(self.fix_json_values(item, callback))
+            return newlist
+        elif type(obj) == dict:
+            newdict = {}
+            for item in list(obj):
+                if type(obj[item]) == list or type(obj[item]) == dict:
+                    newdict[item] = self.fix_json_values(obj[item], callback)
+                else:
+                    newdict[item] = callback(obj[item])
+            return newdict
