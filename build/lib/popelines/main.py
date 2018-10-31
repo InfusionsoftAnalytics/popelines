@@ -54,7 +54,7 @@ class popeline:
         """
         if not schema_file_name:
             schema_file_name = f'{self.directory}/schema.json'
-        os.system(f"generate-schema < {file_name} > {schema_file_name}")
+        os.system(f"generate-schema --keep_nulls < {file_name} > {schema_file_name}")
 
         schema = open(schema_file_name, 'r').read()
 
@@ -73,7 +73,7 @@ class popeline:
 
         return old_schm
 
-    def write_to_bq(self, table_name, file_name, append=True):
+    def write_to_bq(self, table_name, file_name, append=True, ignore_unknown_values=False):
         """
         Write file at file_name to table in BQ.
         """
@@ -84,7 +84,6 @@ class popeline:
 
         job_config = bigquery.LoadJobConfig()
         job_config.source_format = 'NEWLINE_DELIMITED_JSON'
-        job_config.schema_update_options = ['ALLOW_FIELD_ADDITION']
 
         # prepare for schema manipulation
         current_tables = [x.table_id for x in self.bq_client.list_tables(dataset_ref)]
@@ -94,18 +93,21 @@ class popeline:
         if table_name in current_tables:	
             table = self.bq_client.get_table(table_ref)	
             new_schm = self.merge_schemas(table.to_api_repr()['schema']['fields'], new_schm)
-            
-            api_repr = job_config.to_api_repr()
-            api_repr['load']['schema'] = {'fields': new_schm}
-            job_config = job_config.from_api_repr(api_repr)
-        else:	
-            job_config.schema = new_schm
+
+        # move new_schm into job_config through the api_repr options
+        api_repr = job_config.to_api_repr()
+        api_repr['load']['schema'] = {'fields': new_schm}
+        job_config = job_config.from_api_repr(api_repr)
         
         # handle write options
         if append == False:
             job_config.write_disposition = "WRITE_TRUNCATE"
         else:
             job_config.write_disposition = "WRITE_APPEND"
+            job_config.schema_update_options = ['ALLOW_FIELD_ADDITION']
+
+        if ignore_unknown_values:
+            job_config.ignore_unknown_values = True
 
         # send to BQ
         with open(file_name, 'rb') as source_file:
@@ -214,7 +216,9 @@ class popeline:
     def fix_json_values(self, obj, callback):
         """
         Runs all values in a JSON object (dict or list) through 
-        the given callback function.
+        the given callback function. Callback should be passed two
+        arguments, the value of the key:value pair (`obj[item]` below)
+        and the key (`item` below).
         """
         if type(obj) == list:
             newlist = []
@@ -227,5 +231,5 @@ class popeline:
                 if type(obj[item]) == list or type(obj[item]) == dict:
                     newdict[item] = self.fix_json_values(obj[item], callback)
                 else:
-                    newdict[item] = callback(obj[item])
+                    newdict[item] = callback(obj[item], item)
             return newdict
