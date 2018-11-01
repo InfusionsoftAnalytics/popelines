@@ -65,12 +65,20 @@ class popeline:
         Run through new_schm and add any fields not in old_schm
         to old_schm.
         """
+
         old_schm_cols = [x['name'] for x in old_schm]
 
         for col in new_schm:
-            if col['name'] not in old_schm_cols:
-                old_schm.append(col)
-
+            if type(col) == dict:
+                if col['name'] not in old_schm_cols:
+                    old_schm.append(col)
+        
+        for count, col in enumerate(old_schm):
+            for meta in col:
+                if type(col[meta]) == list:
+                    new_col = [x for x in new_schm if x['name'] == col['name']][0]
+                    old_schm[count][meta] = self.merge_schemas(col[meta], new_col[meta])
+                    
         return old_schm
 
     def write_to_bq(self, table_name, file_name, append=True, ignore_unknown_values=False):

@@ -4,7 +4,7 @@ with open("README.md", "r") as fh:
     long_description = fh.read()
 
 setuptools.setup(name='popelines',
-      version='0.1.10',
+      version='0.1.11',
       description='An ETL library for Google BigQuery',
       long_description=long_description,
       long_description_content_type='text/markdown',
