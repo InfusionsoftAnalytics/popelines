@@ -73,11 +73,12 @@ class popeline:
                 if col['name'] not in old_schm_cols:
                     old_schm.append(col)
         
-        for count, col in enumerate(old_schm):
-            for meta in col:
-                if type(col[meta]) == list:
-                    new_col = [x for x in new_schm if x['name'] == col['name']][0]
-                    old_schm[count][meta] = self.merge_schemas(col[meta], new_col[meta])
+        for count, old_col in enumerate(old_schm):
+            for meta in old_col:
+                if type(old_col[meta]) == list:
+                    if old_col['name'] in [pot_new_col['name'] for pot_new_col in new_schm]:
+                        new_col = [pot_new_col for pot_new_col in new_schm if pot_new_col['name'] == old_col['name']][0]
+                        old_schm[count][meta] = self.merge_schemas(old_col[meta], new_col[meta])
                     
         return old_schm
 
