@@ -78,11 +78,12 @@ class popeline:
                 if type(old_col[meta]) == list:
                     if old_col['name'] in [pot_new_col['name'] for pot_new_col in new_schm]:
                         new_col = [pot_new_col for pot_new_col in new_schm if pot_new_col['name'] == old_col['name']][0]
-                        old_schm[count][meta] = self.merge_schemas(old_col[meta], new_col[meta])
+                        if meta in new_col:
+                            old_schm[count][meta] = self.merge_schemas(old_col[meta], new_col[meta])
                     
         return old_schm
 
-    def write_to_bq(self, table_name, file_name, append=True, ignore_unknown_values=False):
+    def write_to_bq(self, table_name, file_name, append=True, ignore_unknown_values=False, bq_schema_autodetect=False):
         """
         Write file at file_name to table in BQ.
         """
@@ -94,19 +95,22 @@ class popeline:
         job_config = bigquery.LoadJobConfig()
         job_config.source_format = 'NEWLINE_DELIMITED_JSON'
 
-        # prepare for schema manipulation
-        current_tables = [x.table_id for x in self.bq_client.list_tables(dataset_ref)]
-        new_schm = self.generate_bq_schema(file_name)
+        if bq_schema_autodetect == False:
+            # prepare for schema manipulation
+            current_tables = [x.table_id for x in self.bq_client.list_tables(dataset_ref)]
+            new_schm = self.generate_bq_schema(file_name)
 
-        # if table exists, edit schema. otherwise, use new_schm
-        if table_name in current_tables:	
-            table = self.bq_client.get_table(table_ref)	
-            new_schm = self.merge_schemas(table.to_api_repr()['schema']['fields'], new_schm)
+            # if table exists, edit schema. otherwise, use new_schm
+            if table_name in current_tables:	
+                table = self.bq_client.get_table(table_ref)	
+                new_schm = self.merge_schemas(table.to_api_repr()['schema']['fields'], new_schm)
 
-        # move new_schm into job_config through the api_repr options
-        api_repr = job_config.to_api_repr()
-        api_repr['load']['schema'] = {'fields': new_schm}
-        job_config = job_config.from_api_repr(api_repr)
+            # move new_schm into job_config through the api_repr options
+            api_repr = job_config.to_api_repr()
+            api_repr['load']['schema'] = {'fields': new_schm}
+            job_config = job_config.from_api_repr(api_repr)
+        else:
+            job_config.autodetect = True
         
         # handle write options
         if append == False:
