@@ -242,7 +242,9 @@ class popeline:
             newdict = {}
             for item in list(obj):
                 if type(obj[item]) == list or type(obj[item]) == dict:
-                    newdict[item] = self.fix_json_values(obj[item], callback)
+                    newdict[item] = self.fix_json_values(callback(obj[item], item), callback)
                 else:
                     newdict[item] = callback(obj[item], item)
             return newdict
+        else:
+            return obj
