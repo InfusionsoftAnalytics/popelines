@@ -15,7 +15,7 @@ Usage
 -----
 
 To get started:
-```
+```python
 import popelines
 
 pope = popelines.popeline(dataset_id='', service_key_file_loc=None, directory='.', verbose=False)
@@ -24,7 +24,7 @@ pope = popelines.popeline(dataset_id='', service_key_file_loc=None, directory='.
 Providing a `dataset_id` is required. Everything else is optional - a service key will be inferred from your GOOGLE_ACCOUNT_CREDENTIALS env variable if not provided in `service_key_file_loc`, and `directory` defaults to the current directory if not provided. 
 
 Popelines does some big handy things like you might expect:
-```
+```python
 # write a dict to line-delimited JSON, perfect for uploading to BQ
 pope.write_to_json(file_name=file_name, jayson=your_dict, mode='w')
 
@@ -42,7 +42,7 @@ data = pope.call_api(url=url, method='GET', headers=None, params=None, data=None
 ```
 
 Popelines also does small handy things:
-```
+```python
 # get a logger at your chosen verbosity and use it to log things
 log = pope.log
 log.info('Does the code get to this point?')
@@ -58,7 +58,7 @@ latest_day = pope.find_last_entry(table_name='my_table', date_column='day')
 ```
 
 Finally, Popelines even does weird experimental things:
-```
+```python
 # messed up JSON keys? fix_json_keys takes your dict obj and a callback
 # function and applies the callback to each key recursively!
 my_good_json = pope.fix_json_keys(obj=my_bad_json, callback=key_fixing_function)
