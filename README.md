@@ -50,8 +50,8 @@ log.info('Does the code get to this point?')
 # chunk a date range into chunks n-days large
 start_datetime = datetime.datetime(2018, 3, 1)
 end_datetime = datetime.datetime(2018, 9, 1)
-for day in pope.chunk_date_range(start_datetime=start_datetime, end_datetime=end_datetime, chunk_size=1):
-    print(f"Wow, I'm glad it's not still {day}!!")
+for day in pope.chunk_date_range(start_datetime=start, end_datetime=end, chunk_size=1):
+    print(f"I think I may have been drunk on {day}, can you name another date?")
 
 # find the last entry in a table - basically, query for the MAX() of a column
 latest_day = pope.find_last_entry(table_name='my_table', date_column='day')
