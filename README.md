@@ -8,7 +8,7 @@ Install
 -------
 To install popelines:
 ```bash
-$ pip install instagram-scraper
+$ pip install popelines
 ```
 
 Usage
