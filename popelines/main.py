@@ -6,6 +6,7 @@ import logging
 import requests
 import sys
 import datetime
+import re
 
 class popeline:
     """
@@ -146,14 +147,30 @@ class popeline:
         blob = storage.Blob(gcs_path, bucket)
         blob.upload_from_string(open(file_name, 'r').read())
 
-    def write_to_json(self, file_name, jayson, mode='w'):
+    def write_to_json(self, file_name, jayson, mode='w', prep_for_BQ=False):
         """
         Provide a table_name and a dict object and I will write it in line-delimited
         JSON.
         """
+        if prep_for_BQ == True:
+            jayson = self.fix_json_keys(jayson, self.write_to_json_fix_keys_callback)
+
         with open(file_name, mode) as f:
             for line in jayson:
                 f.writelines(json.dumps(line) + '\n')
+
+    def write_to_json_fix_keys_callback(self, key):
+        """
+        Callback function used for write_to_json's fix_keys call
+        """
+        # add _ if first character in key is numeric
+        if key[0].isnumeric():
+            key = "_" + key
+        # replace "." or " " with "_"
+        key = re.sub(r"[. ]","_",key)
+        # replace non-alphanumeric, non-"_" characters with nothing
+        key = re.sub(r"[^a-zA-Z0-9]","",key)
+        return key
 
     def call_api(self, url, method='GET', headers=None, params=None, data=None):
         """
@@ -176,7 +193,7 @@ class popeline:
         size chunks.
         """
         self.log.info(f'Chunking period {start_datetime} to {end_datetime} into chunks of {chunk_size} days.')
-        for n in range(int ((end_datetime - start_datetime).days)):
+        for n in range(int ((end_datetime - start_datetime).days) + 1):
             if n/chunk_size == int(n/chunk_size):
                 start = start_datetime + datetime.timedelta(n)
                 end = start_datetime + datetime.timedelta(n+chunk_size)
