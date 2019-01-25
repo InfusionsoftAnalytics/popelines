@@ -54,10 +54,12 @@ class popeline:
         representation of a schema
         """
         if not schema_file_name:
-            schema_file_name = f'{self.directory}/schema.json'
+            schema_file_name = f'{self.directory}/schema_temp.json'
         os.system(f"generate-schema --keep_nulls < {file_name} > {schema_file_name}")
 
         schema = open(schema_file_name, 'r').read()
+
+        os.remove(schema_file_name)
 
         return json.loads(schema)
 
@@ -153,13 +155,13 @@ class popeline:
         JSON.
         """
         if prep_for_BQ == True:
-            jayson = self.fix_json_keys(jayson, self.write_to_json_fix_keys_callback)
+            jayson = self.fix_json_keys(jayson, self.prep_json_for_BQ_callback)
 
         with open(file_name, mode) as f:
             for line in jayson:
                 f.writelines(json.dumps(line) + '\n')
 
-    def write_to_json_fix_keys_callback(self, key):
+    def prep_json_for_BQ_callback(self, key):
         """
         Callback function used for write_to_json's fix_keys call
         """
@@ -169,7 +171,7 @@ class popeline:
         # replace "." or " " with "_"
         key = re.sub(r"[. ]","_",key)
         # replace non-alphanumeric, non-"_" characters with nothing
-        key = re.sub(r"[^a-zA-Z0-9]","",key)
+        key = re.sub(r"[^a-zA-Z0-9_]","",key)
         return key
 
     def call_api(self, url, method='GET', headers=None, params=None, data=None):
@@ -217,7 +219,7 @@ class popeline:
 
     def bq_query(self, query):
         """
-        Returns maximum value from date_column in table_name.
+        Runs a query in BQ and retunrs the results in a list of rows.
         """
         query_job = self.bq_client.query(query)  # API request
         rows = [x for x in query_job.result()]
@@ -243,25 +245,26 @@ class popeline:
                     newdict[callback(item)] = obj[item]
             return newdict
 
-    def fix_json_values(self, obj, callback):
+    def fix_json_values(self, obj, callback, **kwargs):
         """
         Runs all values in a JSON object (dict or list) through 
         the given callback function. Callback should be passed two
         arguments, the value of the key:value pair (`obj[item]` below)
-        and the key (`item` below).
+        and the key (`item` below). **kwargs allows you to add arbitrary
+        keywords to pass to your callback function.
         """
         if type(obj) == list:
             newlist = []
             for item in obj:
-                newlist.append(self.fix_json_values(item, callback))
+                newlist.append(self.fix_json_values(item, callback, **kwargs))
             return newlist
         elif type(obj) == dict:
             newdict = {}
             for item in list(obj):
                 if type(obj[item]) == list or type(obj[item]) == dict:
-                    newdict[item] = self.fix_json_values(callback(obj[item], item), callback)
+                    newdict[item] = self.fix_json_values(callback(obj[item], item, **kwargs), callback, **kwargs)
                 else:
-                    newdict[item] = callback(obj[item], item)
+                    newdict[item] = callback(obj[item], item, **kwargs)
             return newdict
         else:
             return obj
