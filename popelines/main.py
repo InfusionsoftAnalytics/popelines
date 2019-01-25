@@ -219,7 +219,7 @@ class popeline:
 
     def bq_query(self, query):
         """
-        Returns maximum value from date_column in table_name.
+        Runs a query in BQ and retunrs the results in a list of rows.
         """
         query_job = self.bq_client.query(query)  # API request
         rows = [x for x in query_job.result()]
