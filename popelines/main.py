@@ -54,10 +54,12 @@ class popeline:
         representation of a schema
         """
         if not schema_file_name:
-            schema_file_name = f'{self.directory}/schema.json'
+            schema_file_name = f'{self.directory}/schema_temp.json'
         os.system(f"generate-schema --keep_nulls < {file_name} > {schema_file_name}")
 
         schema = open(schema_file_name, 'r').read()
+
+        os.remove(schema_file_name)
 
         return json.loads(schema)
 
