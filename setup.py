@@ -4,7 +4,7 @@ with open("README.md", "r") as fh:
     long_description = fh.read()
 
 setuptools.setup(name='popelines',
-      version='0.1.17',
+      version='0.1.18',
       description='An ETL library for Google BigQuery',
       long_description=long_description,
       long_description_content_type='text/markdown',
@@ -17,5 +17,10 @@ setuptools.setup(name='popelines',
       classifiers=[
             "Programming Language :: Python :: 3",
             "License :: OSI Approved :: MIT License",
-            "Operating System :: OS Independent"]
+            "Operating System :: OS Independent"],
+      install_requires=[
+          "google-cloud-storage",
+          "google-cloud-bigquery",
+          "bigquery_schema_generator"
+      ]  
 )
