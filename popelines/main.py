@@ -210,7 +210,7 @@ class popeline:
         """
         Returns maximum value from date_column in table_name.
         """
-        query = f"SELECT MAX(TIMESTAMP_MILLIS({date_column})) FROM `{self.dataset_id}.{table_name}`"
+        query = f"SELECT MAX({date_column}) FROM `{self.dataset_id}.{table_name}`"
         query_job = self.bq_client.query(query)  # API request
         rows = query_job.result()
         latest_time = [x[0] for x in rows][0]
