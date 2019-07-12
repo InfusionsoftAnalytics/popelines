@@ -12,7 +12,12 @@ class popeline:
     """
     popeline creates a data pipeline for Google's BigQuery. 
     """
-    def __init__(self, dataset_id, service_key_file_loc=None, directory='.', verbose=False):
+    def __init__(self,
+                 dataset_id, 
+                 project=None, 
+                 service_key_file_loc=None, 
+                 directory='.', 
+                 verbose=False):
 
         # set up GCS and BQ clients - if no service_account_json provided, then pull
         # from environment variable
@@ -22,6 +27,11 @@ class popeline:
         else:
             self.bq_client = bigquery.Client()
             self.gcs_client = storage.Client()
+
+        # if a project is provided, set that project
+        if project:
+            self.bq_client.project = project
+            self.gcs_client.project = project
 
         # set up a logger
         self.log = self.get_logger(verbose)
@@ -86,7 +96,12 @@ class popeline:
                     
         return old_schm
 
-    def write_to_bq(self, table_name, file_name, append=True, ignore_unknown_values=False, bq_schema_autodetect=False):
+    def write_to_bq(self, 
+                    table_name, 
+                    file_name, 
+                    append=True, 
+                    ignore_unknown_values=False, 
+                    bq_schema_autodetect=False):
         """
         Write file at file_name to table in BQ.
         """
