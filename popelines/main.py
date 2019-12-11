@@ -1,6 +1,7 @@
 import json
 from google.cloud import bigquery
 from google.cloud import storage
+from popelines.copy_table import process_field, process_cross_joins
 import os
 import logging
 import requests
@@ -283,3 +284,27 @@ class popeline:
             return newdict
         else:
             return obj
+
+    def copy_and_replace_keys(self, table, key_callback):
+        """
+        Returns a query for copying and replacing a table, applying the given callback
+        to each column name. 
+        """
+        client = self.bq_client
+        t = client.get_table(table)
+
+        cross_joins = []
+
+        # begin query generation process
+        q = f'CREATE OR REPLACE TABLE `{table}` AS (\nSELECT \n'
+        for field in t.schema:
+            q += process_field(field, None, key_callback)
+            cross_joins.extend(process_cross_joins(field, "copy_table"))
+        q = q.strip(",\n")
+        q += f"\nFROM\n  `{table}` copy_table"
+
+        for cross_join in cross_joins:
+            q += cross_join
+        q += ")"
+
+        return q
